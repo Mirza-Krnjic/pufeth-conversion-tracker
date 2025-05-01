@@ -1,42 +1,47 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import { config } from 'dotenv';
 import { PufferVaultService } from './contracts/pufferVault.service';
 import { InfluxDBService } from './services/influxdb.service';
 import { RateTrackerService } from './background/rateTracker.service';
 import { createRateRoutes } from './routes/rate.routes';
+import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
 // Load environment variables
-dotenv.config();
+config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
 
 // Initialize services
 const pufferVaultService = new PufferVaultService();
 const influxDBService = new InfluxDBService();
 const rateTrackerService = new RateTrackerService(pufferVaultService, influxDBService);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
 // Routes
 app.use('/rates', createRateRoutes(pufferVaultService, influxDBService));
 
-// Basic health check endpoint
+// Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'ok',
-    rateTracking: rateTrackerService.isTracking()
+    rateTracker: rateTrackerService.isTracking() ? 'running' : 'stopped'
   });
 });
 
+// Error handling
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 // Start server
 app.listen(port, async () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server running on port ${port}`);
   
-  // Start rate tracking
+  // Start rate tracker
   try {
     await rateTrackerService.startTracking();
     console.log('Rate tracking started');
