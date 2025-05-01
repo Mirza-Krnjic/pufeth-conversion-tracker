@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { PufferVaultService } from './contracts/pufferVault.service';
 import { InfluxDBService } from './services/influxdb.service';
 import { RateTrackerService } from './background/rateTracker.service';
+import { createRateRoutes } from './routes/rate.routes';
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +20,9 @@ const rateTrackerService = new RateTrackerService(pufferVaultService, influxDBSe
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Routes
+app.use('/rates', createRateRoutes(pufferVaultService, influxDBService));
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {
