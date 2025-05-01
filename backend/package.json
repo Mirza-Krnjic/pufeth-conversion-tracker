@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "Backend service for pufETH conversion rate tracker",
   "dependencies": {
+    "@influxdata/influxdb-client": "^1.35.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
