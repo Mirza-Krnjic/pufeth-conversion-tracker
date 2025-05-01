@@ -19,3 +19,5 @@ export const CONVERSION_RATE_MEASUREMENT = 'pufeth_conversion_rate';
 
 // Default retention period (30 days)
 export const DEFAULT_RETENTION_PERIOD = '30d'; 
+
+console.log('InfluxDB URL:', process.env.INFLUXDB_URL);

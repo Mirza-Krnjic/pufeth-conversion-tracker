@@ -1,6 +1,8 @@
+import { config } from 'dotenv';
+// Load environment variables
+config();
 import express from 'express';
 import cors from 'cors';
-import { config } from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { PufferVaultService } from './contracts/pufferVault.service';
 import { InfluxDBService } from './services/influxdb.service';
@@ -10,8 +12,6 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { swaggerSpec } from './config/swagger';
 import logger from './config/logger';
 
-// Load environment variables
-config();
 
 const app = express();
 const port = process.env.PORT || 3000;
