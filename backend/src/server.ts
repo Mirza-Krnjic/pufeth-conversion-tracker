@@ -1,11 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import { PufferVaultService } from './contracts/pufferVault.service';
 import { InfluxDBService } from './services/influxdb.service';
 import { RateTrackerService } from './background/rateTracker.service';
 import { createRateRoutes } from './routes/rate.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
+import { swaggerSpec } from './config/swagger';
+import logger from './config/logger';
 
 // Load environment variables
 config();
@@ -21,6 +24,9 @@ app.use(express.json());
 const pufferVaultService = new PufferVaultService();
 const influxDBService = new InfluxDBService();
 const rateTrackerService = new RateTrackerService(pufferVaultService, influxDBService);
+
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use('/rates', createRateRoutes(pufferVaultService, influxDBService));
@@ -39,13 +45,13 @@ app.use(errorHandler);
 
 // Start server
 app.listen(port, async () => {
-  console.log(`Server running on port ${port}`);
+  logger.info(`Server running on port ${port}`);
   
   // Start rate tracker
   try {
     await rateTrackerService.startTracking();
-    console.log('Rate tracking started');
+    logger.info('Rate tracking started');
   } catch (error: any) {
-    console.error('Failed to start rate tracking:', error?.message || 'Unknown error');
+    logger.error('Failed to start rate tracking', { error: error?.message });
   }
 }); 

@@ -32,10 +32,12 @@ export class PufferVaultService {
         this.contract.totalSupply()
       ]);
 
-      // Calculate rate (totalAssets / totalSupply)
-      const rate = totalAssets.mul(ethers.constants.WeiPerEther)
-        .div(totalSupply)
-        .toNumber() / 1e18;
+      // Convert both values to ether (18 decimals)
+      const assetsInEther = ethers.utils.formatEther(totalAssets);
+      const supplyInEther = ethers.utils.formatEther(totalSupply);
+      
+      // Calculate rate (assets / supply)
+      const rate = parseFloat(assetsInEther) / parseFloat(supplyInEther);
 
       return {
         rate,
