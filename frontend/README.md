@@ -1,54 +1,43 @@
-# React + TypeScript + Vite
+# Frontend - pufETH Conversion Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
+This frontend is a React application that visualizes the pufETH conversion rate over time. It displays the current rate, a historical chart, and recent activity, and connects to the backend REST API.
 
-Currently, two official plugins are available:
+## How to Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Configure environment variables:**
+   - Copy `.env.example` to `.env` and set `VITE_API_BASE_URL` to your backend URL (default: `http://localhost:3000/api`).
+3. **Start the frontend:**
+   ```bash
+   npm run dev
+   ```
+   The app will run on `http://localhost:5173` by default.
 
-## Expanding the ESLint configuration
+## Key Libraries & Why
+- **react**: UI framework
+- **@mui/material**: Material UI for modern, accessible components
+- **react-query**: Data fetching and caching
+- **recharts**: Charting library for time series visualization
+- **typescript**: Type safety and modern JS features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Features
+- Fetches and displays the current pufETH conversion rate
+- Interactive chart for historical rates (last hour, 7 days, 30 days)
+- Recent activity table
+- Shows formula, contract link, and explanations
+- Responsive and user-friendly UI
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## API Integration
+- The frontend expects the backend to be running and accessible at the URL set in `VITE_API_BASE_URL`.
+- Endpoints used:
+  - `/conversion-rate/current`
+  - `/conversion-rate/history`
+  - `/conversion-rate/recent`
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## Notes
+- For demo/testing, historical data may be simulated by the backend.
+- All code is TypeScript and ready for production with real data sources.
