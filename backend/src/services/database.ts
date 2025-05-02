@@ -37,31 +37,32 @@ export const testConnection = async () => {
 };
 
 export const writePoint = async (rate: number, timestamp: Date) => {
+  const writeApi = getInfluxDB().getWriteApi(process.env.INFLUXDB_ORG || 'Test env, Eastern Europe', process.env.INFLUXDB_BUCKET || '_tasks');
+  
   try {
-    const writeApi = getInfluxDB().getWriteApi(process.env.INFLUXDB_ORG || 'Test env, Eastern Europe', process.env.INFLUXDB_BUCKET || '_tasks');
-    
     const point = new Point('conversion_rate')
       .floatField('rate', rate)
       .timestamp(timestamp);
 
-    writeApi.writePoint(point);
+    await writeApi.writePoint(point);
     await writeApi.close();
   } catch (error) {
-    console.error('Error writing to InfluxDB:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', error.message);
-      if ('json' in error) {
-        console.error('Error response:', (error as any).json);
-      }
+    try {
+      await writeApi.close();
+    } catch (closeError) {
+      console.error('Error closing write API:', closeError);
     }
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to write point to InfluxDB');
   }
 };
 
 export const queryPoints = async (start: Date, end: Date) => {
+  const queryApi = getInfluxDB().getQueryApi(process.env.INFLUXDB_ORG || 'Test env, Eastern Europe');
+  
   try {
-    const queryApi = getInfluxDB().getQueryApi(process.env.INFLUXDB_ORG || 'Test env, Eastern Europe');
-    
     const fluxQuery = `
       from(bucket: "${process.env.INFLUXDB_BUCKET || '_tasks'}")
         |> range(start: ${start.toISOString()}, stop: ${end.toISOString()})
@@ -72,16 +73,12 @@ export const queryPoints = async (start: Date, end: Date) => {
     const results = await queryApi.collectRows(fluxQuery);
     return results.map((row: any) => ({
       timestamp: new Date(row._time),
-      rate: row._value
+      rate: Number(row._value)
     }));
   } catch (error) {
-    console.error('Error querying InfluxDB:', error);
     if (error instanceof Error) {
-      console.error('Error details:', error.message);
-      if ('json' in error) {
-        console.error('Error response:', (error as any).json);
-      }
+      throw error;
     }
-    throw error;
+    throw new Error('Failed to query points from InfluxDB');
   }
 }; 

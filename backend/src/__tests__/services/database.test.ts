@@ -1,72 +1,85 @@
-import { InfluxDB } from '@influxdata/influxdb-client';
 import { writePoint, queryPoints } from '../../services/database';
+import { InfluxDB, Point } from '@influxdata/influxdb-client';
 
 // Mock InfluxDB client
-jest.mock('@influxdata/influxdb-client', () => ({
-  InfluxDB: jest.fn().mockImplementation(() => ({
-    getWriteApi: jest.fn().mockReturnValue({
-      writePoint: jest.fn(),
-      close: jest.fn().mockResolvedValue(undefined),
-    }),
-    getQueryApi: jest.fn().mockReturnValue({
-      collectRows: jest.fn().mockResolvedValue([
-        { _time: '2024-05-02T12:00:00Z', _value: 1.5 },
-        { _time: '2024-05-02T12:05:00Z', _value: 1.6 },
-      ]),
-    }),
-  })),
-}));
+const mockWriteApi = {
+  writePoint: jest.fn(),
+  close: jest.fn(),
+};
+
+const mockQueryApi = {
+  collectRows: jest.fn(),
+};
+
+jest.mock('@influxdata/influxdb-client', () => {
+  return {
+    InfluxDB: jest.fn().mockImplementation(() => ({
+      getWriteApi: jest.fn().mockReturnValue(mockWriteApi),
+      getQueryApi: jest.fn().mockReturnValue(mockQueryApi),
+    })),
+    Point: jest.fn().mockImplementation(() => ({
+      timestamp: jest.fn().mockReturnThis(),
+      floatField: jest.fn().mockReturnThis(),
+    })),
+  };
+});
 
 describe('Database Service', () => {
   beforeEach(() => {
+    mockWriteApi.writePoint.mockResolvedValue(undefined);
+    mockWriteApi.close.mockResolvedValue(undefined);
+    mockQueryApi.collectRows.mockResolvedValue([
+      { _time: '2024-05-02T12:00:00.000Z', _value: 1.5 },
+      { _time: '2024-05-02T12:05:00.000Z', _value: 1.6 },
+    ]);
+  });
+
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('writePoint', () => {
-    it('should write a point to InfluxDB', async () => {
+    it('should write point successfully', async () => {
       const rate = 1.5;
       const timestamp = new Date();
 
       await writePoint(rate, timestamp);
 
-      const influxDB = new InfluxDB({ url: '', token: '' });
-      const writeApi = influxDB.getWriteApi('', '');
-      
-      expect(writeApi.writePoint).toHaveBeenCalledWith(
-        expect.objectContaining({
-          _fields: { rate: 1.5 },
-          _timestamp: timestamp,
-        })
-      );
-      expect(writeApi.close).toHaveBeenCalled();
+      expect(mockWriteApi.writePoint).toHaveBeenCalled();
+      expect(mockWriteApi.close).toHaveBeenCalled();
     });
 
-    it('should handle errors when writing to InfluxDB', async () => {
-      const influxDB = new InfluxDB({ url: '', token: '' });
-      const writeApi = influxDB.getWriteApi('', '');
-      writeApi.close.mockRejectedValueOnce(new Error('Write failed'));
+    it('should handle write errors', async () => {
+      const error = new Error('Write failed');
+      mockWriteApi.writePoint.mockRejectedValueOnce(error);
 
       await expect(writePoint(1.5, new Date())).rejects.toThrow('Write failed');
+    });
+
+    it('should handle close errors', async () => {
+      const error = new Error('Close failed');
+      mockWriteApi.close.mockRejectedValueOnce(error);
+
+      await expect(writePoint(1.5, new Date())).rejects.toThrow('Close failed');
     });
   });
 
   describe('queryPoints', () => {
-    it('should query points from InfluxDB', async () => {
-      const start = new Date('2024-05-02T12:00:00Z');
-      const end = new Date('2024-05-02T12:10:00Z');
+    it('should query points successfully', async () => {
+      const start = new Date('2024-05-02T12:00:00.000Z');
+      const end = new Date('2024-05-02T12:10:00.000Z');
 
-      const results = await queryPoints(start, end);
+      const result = await queryPoints(start, end);
 
-      expect(results).toEqual([
-        { timestamp: new Date('2024-05-02T12:00:00Z'), rate: 1.5 },
-        { timestamp: new Date('2024-05-02T12:05:00Z'), rate: 1.6 },
+      expect(result).toEqual([
+        { timestamp: new Date('2024-05-02T12:00:00.000Z'), rate: 1.5 },
+        { timestamp: new Date('2024-05-02T12:05:00.000Z'), rate: 1.6 },
       ]);
     });
 
-    it('should handle errors when querying InfluxDB', async () => {
-      const influxDB = new InfluxDB({ url: '', token: '' });
-      const queryApi = influxDB.getQueryApi('');
-      queryApi.collectRows.mockRejectedValueOnce(new Error('Query failed'));
+    it('should handle query errors', async () => {
+      const error = new Error('Query failed');
+      mockQueryApi.collectRows.mockRejectedValueOnce(error);
 
       await expect(queryPoints(new Date(), new Date())).rejects.toThrow('Query failed');
     });

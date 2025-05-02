@@ -1,51 +1,72 @@
 import { ethers } from 'ethers';
-import { Contract } from 'ethers';
+import {
+  calculateConversionRate,
+  getPufferVault,
+  resetConversionService,
+  setProvider,
+  setPufferVault,
+} from '../../services/conversion';
 
 // Mock ethers
-jest.mock('ethers', () => ({
-  ...jest.requireActual('ethers'),
-  Contract: jest.fn().mockImplementation(() => ({
-    totalAssets: jest.fn().mockResolvedValue(ethers.utils.parseEther('100')),
-    totalSupply: jest.fn().mockResolvedValue(ethers.utils.parseEther('50')),
-  })),
-  providers: {
-    JsonRpcProvider: jest.fn().mockImplementation(() => ({})),
-  },
-  utils: {
-    formatEther: jest.requireActual('ethers').utils.formatEther,
-  },
-}));
+const mockContract = {
+  totalAssets: jest.fn(),
+  totalSupply: jest.fn(),
+};
 
-describe('Conversion Rate Calculation', () => {
-  let pufferVault: Contract;
+const mockProvider = {
+  getNetwork: jest.fn().mockResolvedValue({ chainId: 1 }),
+};
 
+jest.mock('ethers', () => {
+  const actualEthers = jest.requireActual('ethers');
+  return {
+    ...actualEthers,
+    Contract: jest.fn().mockImplementation(() => mockContract),
+    JsonRpcProvider: jest.fn().mockImplementation(() => mockProvider),
+  };
+});
+
+describe('Conversion Service', () => {
   beforeEach(() => {
-    pufferVault = new Contract('0x...', [], new ethers.providers.JsonRpcProvider());
+    resetConversionService();
+    setProvider(mockProvider as unknown as ethers.JsonRpcProvider);
+    setPufferVault(mockContract as unknown as ethers.Contract);
+    // Use BigInt for ethers v6 compatibility
+    mockContract.totalAssets.mockResolvedValue(BigInt('100000000000000000000')); // 100 ETH
+    mockContract.totalSupply.mockResolvedValue(BigInt('50000000000000000000')); // 50 ETH
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should calculate conversion rate correctly', async () => {
-    const totalAssets = await pufferVault.totalAssets();
-    const totalSupply = await pufferVault.totalSupply();
-    
-    const rate = Number(ethers.utils.formatEther(totalAssets)) / Number(ethers.utils.formatEther(totalSupply));
-    
+    const rate = await calculateConversionRate();
     expect(rate).toBe(2); // 100 / 50 = 2
   });
 
   it('should handle zero total supply', async () => {
-    pufferVault.totalSupply.mockResolvedValueOnce(ethers.utils.parseEther('0'));
+    mockContract.totalSupply.mockResolvedValueOnce(BigInt(0));
     
-    const totalAssets = await pufferVault.totalAssets();
-    const totalSupply = await pufferVault.totalSupply();
-    
-    const rate = Number(ethers.utils.formatEther(totalAssets)) / Number(ethers.utils.formatEther(totalSupply));
-    
-    expect(rate).toBe(Infinity);
+    await expect(calculateConversionRate()).rejects.toThrow('Total supply cannot be zero');
   });
 
   it('should handle contract errors', async () => {
-    pufferVault.totalAssets.mockRejectedValueOnce(new Error('Contract call failed'));
+    mockContract.totalAssets.mockRejectedValueOnce(new Error('Contract call failed'));
     
-    await expect(pufferVault.totalAssets()).rejects.toThrow('Contract call failed');
+    await expect(calculateConversionRate()).rejects.toThrow('Contract call failed');
+  });
+
+  it('should reuse the same contract instance', async () => {
+    const vault1 = getPufferVault();
+    const vault2 = getPufferVault();
+    expect(vault1).toBe(vault2);
+  });
+
+  it('should create a new contract instance after reset', async () => {
+    const vault1 = getPufferVault();
+    resetConversionService();
+    const vault2 = getPufferVault();
+    expect(vault1).not.toBe(vault2);
   });
 }); 
