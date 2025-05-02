@@ -4,9 +4,10 @@ import {
   Typography, 
   Box, 
   CircularProgress, 
-  Alert 
+  Alert,
+  Link
 } from '@mui/material';
-import { TrendingUp, TrendingDown } from '@mui/icons-material';
+import { TrendingUp, TrendingDown, Info } from '@mui/icons-material';
 import { useCurrentRate } from '../hooks/useConversionRate';
 
 export const ConversionRateCard = () => {
@@ -27,9 +28,26 @@ export const ConversionRateCard = () => {
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          Current Conversion Rate
-        </Typography>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            pufETH Conversion Rate
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            pufETH is Puffer's liquid staking token. The conversion rate represents how much ETH you receive when redeeming 1 pufETH.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Rate = totalAssets() / totalSupply()
+          </Typography>
+          <Link 
+            href="https://etherscan.io/address/0xD9A442856C234a39a81a089C06451EBAa4306a72" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+          >
+            <Info fontSize="small" />
+            View PufferVaultV2 Contract
+          </Link>
+        </Box>
         {isLoading ? (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
             <CircularProgress />

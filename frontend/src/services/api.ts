@@ -11,6 +11,33 @@ export interface HistoricalData {
   rate: number;
 }
 
+const getTimeRangeParams = (timeRange: string) => {
+  const now = new Date();
+  let start: Date;
+
+  switch (timeRange) {
+    case '1h':
+      start = new Date(now.getTime() - 60 * 60 * 1000);
+      break;
+    case '24h':
+      start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      break;
+    case '7d':
+      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case '30d':
+      start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  }
+
+  return {
+    start: start.toISOString(),
+    end: now.toISOString(),
+  };
+};
+
 export const api = {
   getCurrentRate: async (): Promise<ConversionRate> => {
     const response = await fetch(`${API_BASE_URL}/conversion-rate/current`);
@@ -21,7 +48,10 @@ export const api = {
   },
 
   getHistoricalData: async (timeRange: string): Promise<HistoricalData[]> => {
-    const response = await fetch(`${API_BASE_URL}/conversion-rate/history?range=${timeRange}`);
+    const { start, end } = getTimeRangeParams(timeRange);
+    const response = await fetch(
+      `${API_BASE_URL}/conversion-rate/history?start=${start}&end=${end}`
+    );
     if (!response.ok) {
       throw new Error('Failed to fetch historical data');
     }
