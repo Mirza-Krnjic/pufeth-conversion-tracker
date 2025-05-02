@@ -1,5 +1,8 @@
 import { Grid, Paper, Typography, Box } from '@mui/material';
-import { Layout, ConversionRateCard, HistoricalDataChart, RecentActivityTable } from '../components';
+import { Layout } from '../components/Layout';
+import { ConversionRateCard } from '../components/ConversionRateCard';
+import { HistoricalDataChart } from '../components/HistoricalDataChart';
+import { RecentActivityTable } from '../components/RecentActivityTable';
 
 export const HomePage = () => {
   return (

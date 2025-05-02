@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, CircularProgress, Select, MenuItem, FormControl, InputLabel, Alert } from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -12,6 +12,8 @@ import {
   TimeScale,
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
+import { useHistoricalData } from '../hooks/useConversionRate';
+import { useState } from 'react';
 
 ChartJS.register(
   CategoryScale,
@@ -24,22 +26,20 @@ ChartJS.register(
   TimeScale
 );
 
-interface HistoricalDataChartProps {
-  data?: {
-    timestamp: string;
-    rate: number;
-  }[];
-  isLoading?: boolean;
-  timeRange?: string;
-  onTimeRangeChange?: (range: string) => void;
-}
+export const HistoricalDataChart = () => {
+  const [timeRange, setTimeRange] = useState('1h');
+  const { data, isLoading, error } = useHistoricalData(timeRange);
 
-export const HistoricalDataChart = ({ 
-  data, 
-  isLoading = false, 
-  timeRange = '1h',
-  onTimeRangeChange 
-}: HistoricalDataChartProps) => {
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          Failed to load historical data. Please try again later.
+        </Alert>
+      </Box>
+    );
+  }
+
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={300}>
@@ -100,7 +100,7 @@ export const HistoricalDataChart = ({
           <Select
             value={timeRange}
             label="Time Range"
-            onChange={(e) => onTimeRangeChange?.(e.target.value)}
+            onChange={(e) => setTimeRange(e.target.value)}
           >
             <MenuItem value="1h">Last Hour</MenuItem>
             <MenuItem value="6h">Last 6 Hours</MenuItem>

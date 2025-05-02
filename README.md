@@ -32,5 +32,3 @@ A full-stack application that tracks and visualizes the pufETH conversion rate o
 - Responsive design
 
 ## Development
-
-*More details to be added as we progress* 
