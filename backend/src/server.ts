@@ -2,22 +2,18 @@ import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { ethers } from 'ethers';
-import { writePoint, queryPoints } from './services/database';
+import { getInfluxDB3Client, writeConversionRate } from './services/database3';
 import { swaggerSpec } from './swagger';
-import dotenv from 'dotenv';
-import path from 'path';
+import { config } from './config';
 import { calculateConversionRate } from './services/conversion';
-
-// Load environment variables with explicit path
-const envPath = path.resolve(__dirname, '../.env');
-console.log('Loading environment variables from:', envPath);
-dotenv.config({ path: envPath });
 
 // Log environment variables (excluding sensitive ones)
 console.log('Environment variables loaded:');
-console.log('ETHEREUM_RPC_URL:', process.env.ETHEREUM_RPC_URL ? 'set' : 'not set');
-console.log('PUFFER_VAULT_ADDRESS:', process.env.PUFFER_VAULT_ADDRESS ? 'set' : 'not set');
-console.log('INFLUXDB_URL:', process.env.INFLUXDB_URL ? 'set' : 'not set');
+console.log('ETHEREUM_RPC_URL:', config.ethereum.rpcUrl ? 'set' : 'not set');
+console.log('PUFFER_VAULT_ADDRESS:', config.ethereum.pufferVaultAddress ? 'set' : 'not set');
+console.log('INFLUXDB_URL:', config.influxdb.url ? 'set' : 'not set');
+console.log('INFLUXDB_TOKEN:', config.influxdb.token ? 'set' : 'not set');
+console.log('INFLUXDB_BUCKET:', config.influxdb.bucket ? 'set' : 'not set');
 
 // Initialize Express app
 export const app = express();
@@ -75,7 +71,15 @@ app.get('/api/conversion-rate/current', async (req, res) => {
   try {
     const rate = await calculateConversionRate();
     const timestamp = new Date();
-    await writePoint(rate, timestamp);
+    
+    try {
+      // Write to InfluxDB using our service function
+      await writeConversionRate(rate);
+    } catch (error) {
+      console.error('Failed to write to InfluxDB:', error);
+      // Continue with the response even if writing to InfluxDB fails
+    }
+    
     res.json({
       rate,
       timestamp: timestamp.toISOString(),
@@ -127,14 +131,20 @@ app.get('/api/conversion-rate/current', async (req, res) => {
  */
 app.get('/api/conversion-rate/history', async (req, res) => {
   try {
-    const start = req.query.start ? new Date(req.query.start as string) : new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const end = req.query.end ? new Date(req.query.end as string) : new Date();
-    
-    const data = await queryPoints(start, end);
-    res.json(data.map(point => ({
-      ...point,
-      timestamp: point.timestamp.toISOString()
-    })));
+    const start = req.query.start ? req.query.start as string : new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const end = req.query.end ? req.query.end as string : new Date().toISOString();
+    const client = getInfluxDB3Client();
+    const query = `SELECT * FROM conversion_rate WHERE time >= '${start}' AND time <= '${end}'`;
+    const results = await client.query(query);
+    const data = [];
+    for await (const row of results) {
+      data.push({
+        timestamp: row.time,
+        rate: row.rate
+      });
+    }
+    client.close();
+    res.json(data);
   } catch (error) {
     if (error instanceof Error) {
       res.status(500).json({ error: error.message });
@@ -176,17 +186,18 @@ app.get('/api/conversion-rate/history', async (req, res) => {
 app.get('/api/conversion-rate/recent', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
-    const rate = await calculateConversionRate();
-    const timestamp = new Date();
-    
-    // Generate mock recent activity for now
-    const recentActivity = Array.from({ length: limit }, (_, i) => ({
-      rate,
-      timestamp: new Date(timestamp.getTime() - i * 60000).toISOString(),
-      change: 0
-    }));
-    
-    res.json(recentActivity);
+    const client = getInfluxDB3Client();
+    const query = `SELECT * FROM conversion_rate ORDER BY time DESC LIMIT ${limit}`;
+    const results = await client.query(query);
+    const data = [];
+    for await (const row of results) {
+      data.push({
+        timestamp: row.time,
+        rate: row.rate
+      });
+    }
+    client.close();
+    res.json(data);
   } catch (error) {
     if (error instanceof Error) {
       res.status(500).json({ error: error.message });

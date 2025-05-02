@@ -1,7 +1,6 @@
 import request from 'supertest';
 import { ethers } from 'ethers';
 import { app } from '../../server';
-import { writePoint } from '../../services/database';
 import { resetConversionService, setProvider, setPufferVault } from '../../services/conversion';
 
 // Mock the database service
