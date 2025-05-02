@@ -22,7 +22,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Initialize ethers provider
-const provider = new ethers.providers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL || 'https://eth.llamarpc.com');
+const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL || 'https://eth.llamarpc.com');
 const PUFFER_VAULT_ADDRESS = process.env.PUFFER_VAULT_ADDRESS || '0xD9A442856C234a39a81a089C06451EBAa4306a72';
 
 // ABI for the functions we need
@@ -38,7 +38,7 @@ const updateConversionRate = async () => {
   try {
     const totalAssets = await pufferVault.totalAssets();
     const totalSupply = await pufferVault.totalSupply();
-    const rate = Number(totalAssets) / Number(totalSupply);
+    const rate = Number(ethers.formatEther(totalAssets)) / Number(ethers.formatEther(totalSupply));
     
     await writePoint(rate, new Date());
   } catch (error) {
@@ -122,7 +122,7 @@ app.get('/api/conversion-rate/current', async (req, res) => {
       pufferVault.totalSupply()
     ]);
 
-    const rate = Number(ethers.utils.formatEther(totalAssets)) / Number(ethers.utils.formatEther(totalSupply));
+    const rate = Number(ethers.formatEther(totalAssets)) / Number(ethers.formatEther(totalSupply));
     
     res.json({
       rate,
@@ -222,7 +222,7 @@ app.get('/api/conversion-rate/recent', async (req, res) => {
       pufferVault.totalSupply()
     ]);
 
-    const currentRate = Number(ethers.utils.formatEther(totalAssets)) / Number(ethers.utils.formatEther(totalSupply));
+    const currentRate = Number(ethers.formatEther(totalAssets)) / Number(ethers.formatEther(totalSupply));
 
     for (let i = 0; i < parseInt(limit as string); i++) {
       const timestamp = new Date(Date.now() - i * 5 * 60 * 1000);
