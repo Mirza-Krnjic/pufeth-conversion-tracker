@@ -1,4 +1,4 @@
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -9,7 +9,9 @@ import {
   Title,
   Tooltip,
   Legend,
+  TimeScale,
 } from 'chart.js';
+import 'chartjs-adapter-date-fns';
 
 ChartJS.register(
   CategoryScale,
@@ -18,18 +20,26 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  TimeScale
 );
 
 interface HistoricalDataChartProps {
   data?: {
-    labels: string[];
-    values: number[];
-  };
+    timestamp: string;
+    rate: number;
+  }[];
   isLoading?: boolean;
+  timeRange?: string;
+  onTimeRangeChange?: (range: string) => void;
 }
 
-export const HistoricalDataChart = ({ data, isLoading = false }: HistoricalDataChartProps) => {
+export const HistoricalDataChart = ({ 
+  data, 
+  isLoading = false, 
+  timeRange = '1h',
+  onTimeRangeChange 
+}: HistoricalDataChartProps) => {
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={300}>
@@ -39,11 +49,13 @@ export const HistoricalDataChart = ({ data, isLoading = false }: HistoricalDataC
   }
 
   const chartData = {
-    labels: data?.labels || [],
     datasets: [
       {
         label: 'Conversion Rate',
-        data: data?.values || [],
+        data: data?.map(point => ({
+          x: new Date(point.timestamp),
+          y: point.rate
+        })) || [],
         borderColor: '#1976d2',
         backgroundColor: 'rgba(25, 118, 210, 0.1)',
         tension: 0.4,
@@ -68,6 +80,12 @@ export const HistoricalDataChart = ({ data, isLoading = false }: HistoricalDataC
       },
     },
     scales: {
+      x: {
+        type: 'time' as const,
+        time: {
+          unit: 'minute' as const,
+        },
+      },
       y: {
         beginAtZero: false,
       },
@@ -75,8 +93,26 @@ export const HistoricalDataChart = ({ data, isLoading = false }: HistoricalDataC
   };
 
   return (
-    <Box sx={{ height: 400 }}>
-      <Line data={chartData} options={options} />
+    <Box>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>Time Range</InputLabel>
+          <Select
+            value={timeRange}
+            label="Time Range"
+            onChange={(e) => onTimeRangeChange?.(e.target.value)}
+          >
+            <MenuItem value="1h">Last Hour</MenuItem>
+            <MenuItem value="6h">Last 6 Hours</MenuItem>
+            <MenuItem value="24h">Last 24 Hours</MenuItem>
+            <MenuItem value="7d">Last 7 Days</MenuItem>
+            <MenuItem value="30d">Last 30 Days</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+      <Box sx={{ height: 400 }}>
+        <Line data={chartData} options={options} />
+      </Box>
     </Box>
   );
 }; 

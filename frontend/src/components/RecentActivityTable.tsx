@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box } from '@mui/material';
 import { TrendingUp, TrendingDown } from '@mui/icons-material';
+import { formatDistanceToNow } from 'date-fns';
 
 interface ActivityData {
   timestamp: string;
@@ -10,9 +11,10 @@ interface ActivityData {
 interface RecentActivityTableProps {
   data?: ActivityData[];
   isLoading?: boolean;
+  limit?: number;
 }
 
-export const RecentActivityTable = ({ data, isLoading = false }: RecentActivityTableProps) => {
+export const RecentActivityTable = ({ data, isLoading = false, limit = 10 }: RecentActivityTableProps) => {
   if (isLoading) {
     return (
       <TableContainer component={Paper}>
@@ -45,20 +47,24 @@ export const RecentActivityTable = ({ data, isLoading = false }: RecentActivityT
     );
   }
 
+  const sortedData = [...data]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, limit);
+
   return (
     <TableContainer component={Paper}>
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Timestamp</TableCell>
+            <TableCell>Time</TableCell>
             <TableCell align="right">Rate</TableCell>
             <TableCell align="right">Change</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {data.map((row, index) => (
+          {sortedData.map((row, index) => (
             <TableRow key={index}>
-              <TableCell>{row.timestamp}</TableCell>
+              <TableCell>{formatDistanceToNow(new Date(row.timestamp), { addSuffix: true })}</TableCell>
               <TableCell align="right">{row.rate.toFixed(6)}</TableCell>
               <TableCell align="right">
                 <Box
