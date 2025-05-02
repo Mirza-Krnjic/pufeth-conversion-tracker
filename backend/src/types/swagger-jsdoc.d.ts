@@ -11,6 +11,21 @@ declare module 'swagger-jsdoc' {
         url: string;
         description?: string;
       }>;
+      components?: {
+        schemas?: {
+          [key: string]: {
+            type: string;
+            properties?: {
+              [key: string]: {
+                type: string;
+                format?: string;
+                description?: string;
+                example?: any;
+              };
+            };
+          };
+        };
+      };
     };
     apis: string[];
   }

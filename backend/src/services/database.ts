@@ -2,14 +2,14 @@ import { InfluxDB, Point } from '@influxdata/influxdb-client';
 
 let influxDB: InfluxDB | null = null;
 
-const getInfluxDB = () => {
+export const getInfluxDB = () => {
   if (!influxDB) {
     const url = process.env.INFLUXDB_URL || 'https://eu-central-1-1.aws.cloud2.influxdata.com';
     const token = process.env.INFLUXDB_TOKEN;
     const org = process.env.INFLUXDB_ORG || 'Test env, Eastern Europe';
     const bucket = process.env.INFLUXDB_BUCKET || '_tasks';
 
-    if (!token) {
+    if (!token || token.trim() === '') {
       throw new Error('INFLUXDB_TOKEN is required in environment variables');
     }
 
