@@ -1,28 +1,40 @@
-import dotenv from 'dotenv';
-import path from 'path';
+// Setup file for Jest tests
+// Import the *type* if needed, but avoid importing the actual config module here
+// import { type AppConfig } from '@/config';
 
-// Load test environment variables
-dotenv.config({ path: path.resolve(__dirname, '../../../.env.test') });
-
-// Set default environment variables for testing
-process.env.INFLUXDB_URL = process.env.INFLUXDB_URL || 'http://localhost:8086';
-process.env.INFLUXDB_TOKEN = process.env.INFLUXDB_TOKEN || 'test-token';
-process.env.INFLUXDB_ORG = process.env.INFLUXDB_ORG || 'test-org';
-process.env.INFLUXDB_BUCKET = process.env.INFLUXDB_BUCKET || 'test-bucket';
-process.env.ETHEREUM_RPC_URL = process.env.ETHEREUM_RPC_URL || 'http://localhost:8545';
-process.env.PUFFER_VAULT_ADDRESS = process.env.PUFFER_VAULT_ADDRESS || '0x0000000000000000000000000000000000000000';
-
-// Mock console.error to avoid noise in test output
-const originalConsoleError = console.error;
+// Set up test environment
 beforeAll(() => {
-  console.error = jest.fn();
+  // Configure test environment
+  process.env.NODE_ENV = 'test';
+  // Set required env vars if services rely on them directly
+  // process.env.ETHEREUM_RPC_URL = 'mock_rpc_url';
+  // process.env.PUFFER_VAULT_ADDRESS = 'mock_vault_address';
+  // process.env.INFLUXDB_URL = 'mock_influx_url';
+  // process.env.INFLUXDB_TOKEN = 'mock_influx_token';
+  // process.env.INFLUXDB_DATABASE = 'mock_influx_db';
 });
 
+// Clean up after tests
 afterAll(() => {
-  console.error = originalConsoleError;
+  // Reset environment
+  process.env.NODE_ENV = 'development'; // Or whatever your default is
 });
 
-// Clean up after each test
-afterEach(() => {
-  jest.clearAllMocks();
-}); 
+// Mock the config module using the correct path
+jest.mock('@/config', () => ({
+  config: {
+    env: 'test',
+    port: 3001,
+    ethereum: {
+      rpcUrl: 'mock_rpc_url_from_config',
+      pufferVaultAddress: 'mock_vault_address_from_config',
+    },
+    influxdb: {
+      url: 'mock_influx_url_from_config',
+      token: 'mock_influx_token_from_config',
+      org: 'mock_influx_org_from_config',
+      database: 'mock_influx_database_from_config', // Use 'database' consistent with service
+    },
+    // Add other necessary config properties with mock values
+  }
+}));
